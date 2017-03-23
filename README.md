@@ -4,4 +4,4 @@ Set porcupine as your default web browser. When you click a link, instead of ope
 
 Dependencies: `sudo apt install python3-gi python3-pyperclip`
 
-Porcupine isn't packaged yet, but you can install it with `install.sh`. This just copies the porcupine files into your file structure and then sets it as your default browser.
+Porcupine isn't packaged yet, but you can install it with `sudo ./install.sh`. If you're running Subgraph OS, use `./install.sh --subgraph` instead.
