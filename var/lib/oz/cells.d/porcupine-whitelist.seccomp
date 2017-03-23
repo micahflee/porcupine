@@ -1,0 +1,54 @@
+stat:1
+fstat:1
+open:1
+close:1
+read:1
+# Suppressed tracking of syscall mmap, arg2 == 1[PROT_READ]
+mmap: (arg2 == PROT_NONE && arg3 &? MAP_NORESERVE|MAP_PRIVATE|MAP_ANONYMOUS) || (arg3 == MAP_SHARED) || (arg2 == PROT_WRITE && arg3 &? MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS) || (arg2 == PROT_WRITE && arg3 &? MAP_DENYWRITE|MAP_PRIVATE|MAP_FIXED) || (arg2 == PROT_WRITE && arg3 &? MAP_STACK|MAP_PRIVATE|MAP_ANONYMOUS) || (arg2 == PROT_EXEC && arg3 &? MAP_DENYWRITE|MAP_PRIVATE) || (arg2 &? PROT_WRITE|PROT_EXEC && arg3 &? MAP_PRIVATE|MAP_ANONYMOUS)
+futex: (arg1 == FUTEX_PRIVATE_FLAG) || (arg1 &? FUTEX_WAKE|FUTEX_PRIVATE_FLAG)
+lseek:1
+rt_sigaction:1
+mprotect: (arg2 == PROT_NONE) || (arg2 == PROT_WRITE)
+poll:1
+brk:1
+getdents:1
+access:1
+munmap:1
+write:1
+ioctl: (arg1 == TCGETS) || (arg1 == FIOCLEX)
+recvmsg:1
+lstat:1
+sendmsg:1
+fcntl: (arg1 == F_DUPFD) || (arg1 == F_GETFD) || (arg1 == F_SETFD) || (arg1 == F_GETFL) || (arg1 == F_SETFL)
+eventfd2:1
+geteuid:1
+pipe2:1
+dup2:1
+arch_prctl:1
+set_robust_list:1
+clone:1
+readlink:1
+sendto:1
+getdents64:1
+exit_group:1
+dup:1
+statfs:1
+recvfrom:1
+rt_sigprocmask:1
+wait4:1
+getegid:1
+getpid:1
+prctl: arg0 == PR_SET_NAME
+getppid:1
+getuid:1
+uname:1
+faccessat:1
+getrlimit:1
+getgid:1
+set_tid_address:1
+sigaltstack:1
+connect:1
+getrandom:1
+socket: arg0 == AF_UNIX && arg1 == SOCK_STREAM && arg2 == IPPROTO_IP
+sysinfo:1
+execve:1
