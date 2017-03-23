@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Porcupine
+Comment=This is a "web browser" that copies URLs to your clipboard
+Exec=porcupine %U
+Terminal=false
+Type=Application
+Icon=porcupine.png
+Categories=Network;WebBrowser;
+MimeType=x-scheme-handler/http;x-scheme-handler/https;
