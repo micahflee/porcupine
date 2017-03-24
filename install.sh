@@ -5,21 +5,30 @@ if [ "$EUID" -ne 0 ]; then
     exit
 fi
 
+ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # Clean up
-rm /usr/bin/porcipine /usr/share/applications/porcupine.desktop /usr/share/pixmaps/porcupine.png /var/lib/oz/cells.d/porcupine.json /var/lib/oz/cells.d/porcupine-whitelist.seccomp
+rm /usr/bin/porcupine                           &>/dev/null 2>&1
+rm /usr/share/applications/porcupine.desktop    &>/dev/null 2>&1
+rm /usr/share/pixmaps/porcupine.png             &>/dev/null 2>&1
+
+# Copy files
+cp $ROOT/porcupine /usr/bin/
+cp $ROOT/share/applications/porcupine.desktop /usr/share/applications/
+cp $ROOT/share/pixmaps/porcupine.png /usr/share/pixmaps/
 
 if [ "$1" = "--subgraph" ]; then
-    # In Subgraph OS, install app and oz profile
-    sudo cp -r usr/* /usr/
-    mv /usr/bin/porcipine /usr/bin-oz/porcupine
-    ln -s /usr/bin/oz /usr/bin/porcupine
-    sudo cp -r var/* /var/
+    # Clean up
+    rm /var/lib/oz/cells.d/porcupine.json               &>/dev/null 2>&1
+    rm /var/lib/oz/cells.d/porcupine-whitelist.seccomp  &>/dev/null 2>&1
 
+    # Copy files
+    cp $ROOT/subgraph/porcupine.json /var/lib/oz/cells.d/
+    cp $ROOT/subgraph/porcupine-whitelist.seccomp /var/lib/oz/cells.d/
+
+    # Set up oz profile
+    mv /usr/bin/porcupine /usr/bin-oz/
+    ln -s /usr/bin/oz /usr/bin/porcupine
     systemctl restart oz-daemon.service
-else
-    # Not in Subgraph OS, just install app
-    sudo cp -r usr/* /usr/
 fi
 
-# Set porcupine as the default browser
-xdg-settings set default-web-browser porcupine.desktop
