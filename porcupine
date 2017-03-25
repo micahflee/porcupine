@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-import argparse, sys, os, json, pyperclip
+import argparse, sys, os, json, subprocess
+import pyperclip
 from PyQt5 import QtWidgets
 
 import gi
@@ -112,12 +113,12 @@ def main():
     args = parser.parse_args()
 
     # Create the settings object
-    s = Settings()
+    settings = Settings()
 
     if args.url is None:
         # No arguments, open the settings dialog
         app = QtWidgets.QApplication(sys.argv)
-        gui = PorcupineSettingsWindow(app, s)
+        gui = PorcupineSettingsWindow(app, settings)
         sys.exit(app.exec_())
 
     else:
@@ -127,9 +128,21 @@ def main():
             notify("{} does not appear to be a URL".format(url))
             return
 
-        # It's valid, copy it to the clipboard
-        pyperclip.copy(url)
-        notify(url, title="Copied address to clipboard")
+        # Load settings
+        s = settings.load()
+
+        if s['action'] == 'clipboard':
+            # Copy to clipboard
+            pyperclip.copy(url)
+            notify(url, title="Copied address to clipboard")
+        else:
+            # Launch subprocess
+            cmd = s['cmd'].split()
+            cmd = [url if x=='%U' else x for x in cmd]
+            try:
+                subprocess.call(cmd)
+            except:
+                notify("Error running command")
 
 if __name__ == '__main__':
     main()
