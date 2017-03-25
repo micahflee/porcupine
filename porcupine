@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-import sys, pyperclip
+import argparse, sys, os, pyperclip
+from PyQt5 import QtWidgets
 
 import gi
 gi.require_version('Notify', '0.7')
@@ -11,21 +12,62 @@ def notify(msg, title="Pocupine"):
     Hello=Notify.Notification.new(title, msg, "dialog-information")
     Hello.show()
 
+class PorcupineSettingsWindow(QtWidgets.QMainWindow):
+    def __init__(self, app):
+        super(PorcupineSettingsWindow, self).__init__()
+        self.app = app
+        self.setWindowTitle('Porcupine')
+
+        self.settings_path = os.path.expanduser("~/.config/porcupine.json")
+        self.load()
+
+        # Build the GUI
+        label = QtWidgets.QLabel('What should Porcupine do with the URL?')
+        self.radio_clipboard = QtWidgets.QRadioButton('Copy it to the clipboard')
+        self.radio_command = QtWidgets.QRadioButton('Run command with the URL')
+        self.edit_command = QtWidgets.QLineEdit()
+        button_save = QtWidgets.QPushButton("Save Settings")
+
+        # Set the layout
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(label)
+        layout.addWidget(self.radio_clipboard)
+        layout.addWidget(self.radio_command)
+        layout.addWidget(self.edit_command)
+        layout.addWidget(button_save)
+        central_widget = QtWidgets.QWidget()
+        central_widget.setLayout(layout)
+        self.setCentralWidget(central_widget)
+        self.show()
+
+    def save(self):
+        pass
+
+    def load(self):
+        pass
+
 def main():
-    # Check for one argument
-    if len(sys.argv) != 2:
-        notify("Usage: {} [URL]".format(sys.argv[0]))
-        return
+    # Parse arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('url', metavar='url', nargs='?', help='URL to open')
+    args = parser.parse_args()
 
-    # Validate it as a URL
-    url = sys.argv[1]
-    if not url.lower().startswith('http://') and not url.lower().startswith('https://'):
-        notify("{} does not appear to be a URL".format(url))
-        return
+    if args.url is None:
+        # No arguments, open the settings dialog
+        app = QtWidgets.QApplication(sys.argv)
+        gui = PorcupineSettingsWindow(app)
+        sys.exit(app.exec_())
 
-    # It's valid, copy it to the clipboard
-    pyperclip.copy(url)
-    notify(url, title="Copied address to clipboard")
+    else:
+        # Validate it as a URL
+        url = sys.argv[1]
+        if not url.lower().startswith('http://') and not url.lower().startswith('https://'):
+            notify("{} does not appear to be a URL".format(url))
+            return
+
+        # It's valid, copy it to the clipboard
+        pyperclip.copy(url)
+        notify(url, title="Copied address to clipboard")
 
 if __name__ == '__main__':
     main()
