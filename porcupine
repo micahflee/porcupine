@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import argparse, sys, os, pyperclip
+import argparse, sys, os, json, pyperclip
 from PyQt5 import QtWidgets
 
 import gi
@@ -24,9 +24,22 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         # Build the GUI
         label = QtWidgets.QLabel('What should Porcupine do with the URL?')
         self.radio_clipboard = QtWidgets.QRadioButton('Copy it to the clipboard')
+        self.radio_clipboard.toggled.connect(self.toggle)
         self.radio_command = QtWidgets.QRadioButton('Run command with the URL')
+        self.radio_command.toggled.connect(self.toggle)
+        if self.action == 'clipboard':
+            self.radio_clipboard.setChecked(True)
+            self.radio_command.setChecked(False)
+        else:
+            self.radio_clipboard.setChecked(False)
+            self.radio_command.setChecked(True)
         self.edit_command = QtWidgets.QLineEdit()
+        self.edit_command.setPlaceholderText('for example: qvm-open-in-dvm %U')
+        self.edit_command.setText(self.cmd)
         button_save = QtWidgets.QPushButton("Save Settings")
+        button_save.clicked.connect(self.save)
+
+        self.update_ui()
 
         # Set the layout
         layout = QtWidgets.QVBoxLayout()
@@ -34,17 +47,60 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.radio_clipboard)
         layout.addWidget(self.radio_command)
         layout.addWidget(self.edit_command)
+        layout.addStretch()
         layout.addWidget(button_save)
         central_widget = QtWidgets.QWidget()
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
         self.show()
 
-    def save(self):
-        pass
-
     def load(self):
-        pass
+        """
+        Load the settings, setting:
+        self.action and self.cmd
+        """
+        use_default = False
+
+        if os.path.exists(self.settings_path):
+            try:
+                settings = json.load(open(self.settings_path, 'r'))
+                self.action = settings['action']
+                self.cmd = settings['cmd']
+            except:
+                use_default = True
+        else:
+            use_default = True
+
+        if use_default:
+            self.action = 'clipboard'
+            self.cmd = ''
+
+    def save(self):
+        if self.radio_clipboard.isChecked():
+            action = 'clipboard'
+        else:
+            action = 'command'
+        cmd = self.edit_command.text()
+
+        settings = {
+            'action': action,
+            'cmd': cmd
+        }
+        json.dump(settings, open(self.settings_path, 'w'))
+
+        # Saved, quit
+        self.close()
+
+    def toggle(self):
+        self.update_ui()
+
+    def update_ui(self):
+        # Only update the UI if it has been built
+        if hasattr(self, 'radio_clipboard') and hasattr(self, 'radio_command') and hasattr(self, 'edit_command'):
+            if self.radio_clipboard.isChecked():
+                self.edit_command.hide()
+            if self.radio_command.isChecked():
+                self.edit_command.show()
 
 def main():
     # Parse arguments
