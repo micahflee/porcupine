@@ -12,14 +12,44 @@ def notify(msg, title="Pocupine"):
     Hello=Notify.Notification.new(title, msg, "dialog-information")
     Hello.show()
 
+class Settings(object):
+    def __init__(self):
+        self.path = os.path.expanduser("~/.config/porcupine.json")
+
+    def load(self):
+        use_default = False
+        if os.path.exists(self.path):
+            try:
+                settings = json.load(open(self.path, 'r'))
+            except:
+                use_default = True
+        else:
+            use_default = True
+
+        if use_default:
+            settings = {
+                'action': 'clipboard',
+                'cmd': ''
+            }
+
+        return settings
+
+    def save(self, action, cmd):
+        settings = {
+            'action': action,
+            'cmd': cmd
+        }
+        json.dump(settings, open(self.path, 'w'))
+
 class PorcupineSettingsWindow(QtWidgets.QMainWindow):
-    def __init__(self, app):
+    def __init__(self, app, settings):
         super(PorcupineSettingsWindow, self).__init__()
         self.app = app
+        self.settings = settings
         self.setWindowTitle('Porcupine')
 
-        self.settings_path = os.path.expanduser("~/.config/porcupine.json")
-        self.load()
+        # Load the settings
+        s = self.settings.load()
 
         # Build the GUI
         label = QtWidgets.QLabel('What should Porcupine do with the URL?')
@@ -27,7 +57,7 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         self.radio_clipboard.toggled.connect(self.toggle)
         self.radio_command = QtWidgets.QRadioButton('Run command with the URL')
         self.radio_command.toggled.connect(self.toggle)
-        if self.action == 'clipboard':
+        if s['action'] == 'clipboard':
             self.radio_clipboard.setChecked(True)
             self.radio_command.setChecked(False)
         else:
@@ -35,9 +65,9 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
             self.radio_command.setChecked(True)
         self.edit_command = QtWidgets.QLineEdit()
         self.edit_command.setPlaceholderText('for example: qvm-open-in-dvm %U')
-        self.edit_command.setText(self.cmd)
+        self.edit_command.setText(s['cmd'])
         button_save = QtWidgets.QPushButton("Save Settings")
-        button_save.clicked.connect(self.save)
+        button_save.clicked.connect(self.save_settings)
 
         self.update_ui()
 
@@ -54,43 +84,6 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(central_widget)
         self.show()
 
-    def load(self):
-        """
-        Load the settings, setting:
-        self.action and self.cmd
-        """
-        use_default = False
-
-        if os.path.exists(self.settings_path):
-            try:
-                settings = json.load(open(self.settings_path, 'r'))
-                self.action = settings['action']
-                self.cmd = settings['cmd']
-            except:
-                use_default = True
-        else:
-            use_default = True
-
-        if use_default:
-            self.action = 'clipboard'
-            self.cmd = ''
-
-    def save(self):
-        if self.radio_clipboard.isChecked():
-            action = 'clipboard'
-        else:
-            action = 'command'
-        cmd = self.edit_command.text()
-
-        settings = {
-            'action': action,
-            'cmd': cmd
-        }
-        json.dump(settings, open(self.settings_path, 'w'))
-
-        # Saved, quit
-        self.close()
-
     def toggle(self):
         self.update_ui()
 
@@ -102,16 +95,29 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
             if self.radio_command.isChecked():
                 self.edit_command.show()
 
+    def save_settings(self):
+        if self.radio_clipboard.isChecked():
+            action = 'clipboard'
+        else:
+            action = 'command'
+        cmd = self.edit_command.text()
+
+        self.settings.save(action, cmd)
+        self.close()
+
 def main():
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('url', metavar='url', nargs='?', help='URL to open')
     args = parser.parse_args()
 
+    # Create the settings object
+    s = Settings()
+
     if args.url is None:
         # No arguments, open the settings dialog
         app = QtWidgets.QApplication(sys.argv)
-        gui = PorcupineSettingsWindow(app)
+        gui = PorcupineSettingsWindow(app, s)
         sys.exit(app.exec_())
 
     else:
