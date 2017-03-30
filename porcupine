@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse, sys, os, json, subprocess
-import pyperclip
 from PyQt5 import QtWidgets
 
 import gi
@@ -133,7 +132,9 @@ def main():
 
         if s['action'] == 'clipboard':
             # Copy to clipboard
-            pyperclip.copy(url)
+            app = QtWidgets.QApplication(sys.argv)
+            clipboard = app.clipboard()
+            clipboard.setText(url)
             notify(url, title="Copied address to clipboard")
         else:
             # Launch subprocess
