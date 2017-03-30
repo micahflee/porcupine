@@ -1,0 +1,4 @@
+include LICENSE.md
+include README.md
+include BUILD.md
+include share/*
