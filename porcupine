@@ -1,16 +1,35 @@
 #!/usr/bin/env python3
+import argparse, sys, os, json, subprocess, platform, inspect
+from PyQt5 import Qt, QtWidgets, QtCore
 
-import argparse, sys, os, json, subprocess
-from PyQt5 import QtWidgets
+def get_icon_path():
+    p = platform.system()
 
-import gi
-gi.require_version('Notify', '0.7')
-from gi.repository import Notify
+    if p == 'Linux' and sys.argv and sys.argv[0].startswith(sys.prefix):
+        # Porcupine is installed systemwide in Linux
+        prefix = os.path.join(sys.prefix, 'share/pixmaps')
 
-def notify(msg, title="Pocupine"):
-    Notify.init("Porcupine")
-    Hello=Notify.Notification.new(title, msg, "dialog-information")
-    Hello.show()
+    elif getattr(sys, 'frozen', False):
+        # Check if app is "frozen"
+        # https://pythonhosted.org/PyInstaller/#run-time-information
+        if p == 'Darwin':
+            prefix = os.path.join(sys._MEIPASS, 'share')
+        elif p == 'Windows':
+            prefix = os.path.join(os.path.dirname(sys.executable), 'share')
+
+    else:
+        # Look for share directory relative to python file
+        prefix = os.path.join(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))), 'share')
+
+    return os.path.join(prefix, "porcupine.png")
+
+def validate_url(url):
+    return (url.lower().startswith('http://') or url.lower().startswith('https://'))
+
+def delay(app, milliseconds):
+    time = QtCore.QTime.currentTime().addMSecs(milliseconds)
+    while (QtCore.QTime.currentTime() < time):
+        app.processEvents()
 
 class Settings(object):
     def __init__(self):
@@ -47,6 +66,7 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         self.app = app
         self.settings = settings
         self.setWindowTitle('Porcupine')
+        self.setWindowIcon(Qt.QIcon(get_icon_path()))
 
         # Load the settings
         s = self.settings.load()
@@ -114,36 +134,51 @@ def main():
     # Create the settings object
     settings = Settings()
 
+    # Start the Qt application
+    app = QtWidgets.QApplication(sys.argv)
+
     if args.url is None:
         # No arguments, open the settings dialog
-        app = QtWidgets.QApplication(sys.argv)
-        gui = PorcupineSettingsWindow(app, settings)
-        sys.exit(app.exec_())
+        settings_window = PorcupineSettingsWindow(app, settings)
 
     else:
+        # Start the system tray
+        systray = Qt.QSystemTrayIcon(Qt.QIcon(get_icon_path()))
+        systray.show()
+        delay(app, 20)
+
         # Validate it as a URL
         url = sys.argv[1]
-        if not url.lower().startswith('http://') and not url.lower().startswith('https://'):
-            notify("{} does not appear to be a URL".format(url))
-            return
 
-        # Load settings
-        s = settings.load()
+        if validate_url(url):
+            # Load settings
+            s = settings.load()
 
-        if s['action'] == 'clipboard':
-            # Copy to clipboard
-            app = QtWidgets.QApplication(sys.argv)
-            clipboard = app.clipboard()
-            clipboard.setText(url)
-            notify(url, title="Copied address to clipboard")
+            if s['action'] == 'clipboard':
+                # Copy to clipboard
+                clipboard = app.clipboard()
+                clipboard.setText(url)
+                systray.showMessage("Copied address to clipboard", url)
+            else:
+                # Launch subprocess
+                cmd = s['cmd'].split()
+                cmd = [url if x=='%U' else x for x in cmd]
+                try:
+                    subprocess.call(cmd)
+                except:
+                    systray.showMessage("Porcupine", "Error running command: {}".format(s['cmd']))
         else:
-            # Launch subprocess
-            cmd = s['cmd'].split()
-            cmd = [url if x=='%U' else x for x in cmd]
-            try:
-                subprocess.call(cmd)
-            except:
-                notify("Error running command")
+            systray.showMessage("Porcupine", "{} does not appear to be a URL".format(url))
+
+        # Quit after a few seconds
+        def quit():
+            systray.hide()
+            app.quit()
+        timer = QtCore.QTimer()
+        timer.timeout.connect(quit)
+        timer.start(4000)
+
+    sys.exit(app.exec_())
 
 if __name__ == '__main__':
     main()
