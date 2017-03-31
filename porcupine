@@ -33,7 +33,14 @@ def delay(app, milliseconds):
 
 class Settings(object):
     def __init__(self):
-        self.path = os.path.expanduser("~/.config/porcupine.json")
+        p = platform.system()
+        if p == 'Windows':
+            appdata = os.environ['APPDATA']
+            self.path = '{}\\Porcupine\\porcupine.json'.format(appdata)
+        elif p == 'Darwin':
+            self.path = os.path.expanduser('~/Library/Application Support/Porcupine/porcupine.json')
+        else:
+            self.path = os.path.expanduser('~/.config/porcupine.json')
 
     def load(self):
         use_default = False
@@ -58,6 +65,12 @@ class Settings(object):
             'action': action,
             'cmd': cmd
         }
+
+        try:
+            os.makedirs(os.path.dirname(self.path))
+        except:
+            pass
+
         json.dump(settings, open(self.path, 'w'))
 
 class PorcupineSettingsWindow(QtWidgets.QMainWindow):
