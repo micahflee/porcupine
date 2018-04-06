@@ -5,6 +5,7 @@ import os
 import json
 import subprocess
 import inspect
+import signal
 from PyQt5 import Qt, QtWidgets, QtCore
 
 
@@ -184,6 +185,9 @@ def main():
         timer = QtCore.QTimer()
         timer.timeout.connect(quit)
         timer.start(4000)
+
+    # Allow ctrl-c to work
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     sys.exit(app.exec_())
 
