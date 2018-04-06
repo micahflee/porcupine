@@ -1,21 +1,11 @@
 #!/usr/bin/env python3
-import argparse, sys, os, json, subprocess, platform, inspect
+import argparse, sys, os, json, subprocess, inspect
 from PyQt5 import Qt, QtWidgets, QtCore
 
 def get_icon_path():
-    p = platform.system()
-
-    if p == 'Linux' and sys.argv and sys.argv[0].startswith(sys.prefix):
-        # Porcupine is installed systemwide in Linux
+    if sys.argv and sys.argv[0].startswith(sys.prefix):
+        # Porcupine is installed systemwide
         prefix = os.path.join(sys.prefix, 'share/pixmaps')
-
-    elif getattr(sys, 'frozen', False):
-        # Check if app is "frozen"
-        # https://pythonhosted.org/PyInstaller/#run-time-information
-        if p == 'Darwin':
-            prefix = os.path.join(sys._MEIPASS, 'share')
-        elif p == 'Windows':
-            prefix = os.path.join(os.path.dirname(sys.executable), 'share')
 
     else:
         # Look for share directory relative to python file
@@ -33,14 +23,7 @@ def delay(app, milliseconds):
 
 class Settings(object):
     def __init__(self):
-        p = platform.system()
-        if p == 'Windows':
-            appdata = os.environ['APPDATA']
-            self.path = '{}\\Porcupine\\porcupine.json'.format(appdata)
-        elif p == 'Darwin':
-            self.path = os.path.expanduser('~/Library/Application Support/Porcupine/porcupine.json')
-        else:
-            self.path = os.path.expanduser('~/.config/porcupine.json')
+        self.path = os.path.expanduser('~/.config/porcupine.json')
 
     def load(self):
         use_default = False
