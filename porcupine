@@ -146,8 +146,9 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
 
     if args.url is None:
-        # No arguments, open the settings dialog
-        PorcupineSettingsWindow(app, settings)
+        # No arguments, open the settings dialog. Even though settings_window is
+        # never used later, we must keep a reference to it
+        settings_window = PorcupineSettingsWindow(app, settings)
 
     else:
         # Start the system tray
