@@ -119,6 +119,7 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
 
         # Set the layout
         layout = QtWidgets.QVBoxLayout()
+        layout.setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
         layout.addWidget(label)
         layout.addWidget(self.radio_clipboard)
         layout.addWidget(self.radio_command)
