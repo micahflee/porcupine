@@ -84,18 +84,28 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         self.radio_clipboard.toggled.connect(self.toggle)
         self.radio_command = QtWidgets.QRadioButton('Run command with the URL')
         self.radio_command.toggled.connect(self.toggle)
+        self.edit_command = QtWidgets.QLineEdit()
+        self.edit_command.setPlaceholderText('for example: qvm-open-in-dvm %U')
+        self.edit_command.setText(s['cmd'])
+        self.default_browser_label = QtWidgets.QLabel("Porcipine isn't your default browser")
+        self.default_browser_label.setStyleSheet('QLabel { font-weight: bold; }')
+
+        # Buttons
+        self.save_button = QtWidgets.QPushButton("Save Settings")
+        self.save_button.clicked.connect(self.save_settings)
+        self.default_browser_button = QtWidgets.QPushButton("Set as Default")
+        self.default_browser_button.clicked.connect(self.set_default_browser)
+        buttons_layout = QtWidgets.QHBoxLayout()
+        buttons_layout.addWidget(self.save_button)
+        buttons_layout.addWidget(self.default_browser_button)
+
+        # Choose the default action
         if s['action'] == 'clipboard':
             self.radio_clipboard.setChecked(True)
             self.radio_command.setChecked(False)
         else:
             self.radio_clipboard.setChecked(False)
             self.radio_command.setChecked(True)
-        self.edit_command = QtWidgets.QLineEdit()
-        self.edit_command.setPlaceholderText('for example: qvm-open-in-dvm %U')
-        self.edit_command.setText(s['cmd'])
-        button_save = QtWidgets.QPushButton("Save Settings")
-        button_save.clicked.connect(self.save_settings)
-
         self.update_ui()
 
         # Set the layout
@@ -105,7 +115,8 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.radio_command)
         layout.addWidget(self.edit_command)
         layout.addStretch()
-        layout.addWidget(button_save)
+        layout.addWidget(self.default_browser_label)
+        layout.addLayout(buttons_layout)
         central_widget = QtWidgets.QWidget()
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
@@ -115,12 +126,23 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         self.update_ui()
 
     def update_ui(self):
+        # Is porcupine the default browser?
+        default_browser = subprocess.check_output(['xdg-settings', 'get', 'default-web-browser']).strip()
+        if default_browser == b'porcupine.desktop':
+            self.default_browser_label.hide()
+            self.default_browser_button.hide()
+        else:
+            self.default_browser_label.show()
+            self.default_browser_button.show()
+
         # Only update the UI if it has been built
         if hasattr(self, 'radio_clipboard') and hasattr(self, 'radio_command') and hasattr(self, 'edit_command'):
             if self.radio_clipboard.isChecked():
                 self.edit_command.hide()
             if self.radio_command.isChecked():
                 self.edit_command.show()
+
+        self.adjustSize()
 
     def save_settings(self):
         if self.radio_clipboard.isChecked():
@@ -131,6 +153,10 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
 
         self.settings.save(action, cmd)
         self.close()
+
+    def set_default_browser(self):
+        subprocess.call(['xdg-settings', 'set', 'default-web-browser', 'porcupine.desktop'])
+        self.update_ui()
 
 
 def main():
