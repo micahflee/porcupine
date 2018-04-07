@@ -87,17 +87,26 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         self.edit_command = QtWidgets.QLineEdit()
         self.edit_command.setPlaceholderText('for example: qvm-open-in-dvm %U')
         self.edit_command.setText(s['cmd'])
-        self.default_browser_label = QtWidgets.QLabel("Porcipine isn't your default browser")
-        self.default_browser_label.setStyleSheet('QLabel { font-weight: bold; }')
 
-        # Buttons
+        # Button
         self.save_button = QtWidgets.QPushButton("Save Settings")
         self.save_button.clicked.connect(self.save_settings)
-        self.default_browser_button = QtWidgets.QPushButton("Set as Default")
-        self.default_browser_button.clicked.connect(self.set_default_browser)
         buttons_layout = QtWidgets.QHBoxLayout()
         buttons_layout.addWidget(self.save_button)
-        buttons_layout.addWidget(self.default_browser_button)
+        buttons_layout.addStretch()
+
+        # Default browser
+        default_browser_label = QtWidgets.QLabel("Porcupine isn't your default browser")
+        default_browser_label.setStyleSheet('QLabel { font-size: 13px; }')
+        default_browser_button = QtWidgets.QPushButton("Set as default")
+        default_browser_button.setStyleSheet('QPushButton { font-size: 13px; font-weight: bold; }')
+        default_browser_button.clicked.connect(self.set_default_browser)
+        default_browser_layout = QtWidgets.QHBoxLayout()
+        default_browser_layout.addWidget(default_browser_label)
+        default_browser_layout.addWidget(default_browser_button)
+        default_browser_layout.addStretch()
+        self.default_browser_group = QtWidgets.QGroupBox()
+        self.default_browser_group.setLayout(default_browser_layout)
 
         # Choose the default action
         if s['action'] == 'clipboard':
@@ -115,8 +124,9 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.radio_command)
         layout.addWidget(self.edit_command)
         layout.addStretch()
-        layout.addWidget(self.default_browser_label)
         layout.addLayout(buttons_layout)
+        layout.addStretch()
+        layout.addWidget(self.default_browser_group)
         central_widget = QtWidgets.QWidget()
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
@@ -129,11 +139,9 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         # Is porcupine the default browser?
         default_browser = subprocess.check_output(['xdg-settings', 'get', 'default-web-browser']).strip()
         if default_browser == b'porcupine.desktop':
-            self.default_browser_label.hide()
-            self.default_browser_button.hide()
+            self.default_browser_group.hide()
         else:
-            self.default_browser_label.show()
-            self.default_browser_button.show()
+            self.default_browser_group.show()
 
         # Only update the UI if it has been built
         if hasattr(self, 'radio_clipboard') and hasattr(self, 'radio_command') and hasattr(self, 'edit_command'):
