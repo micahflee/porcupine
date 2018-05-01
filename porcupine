@@ -138,8 +138,9 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
 
     def update_ui(self):
         # Is porcupine the default browser?
-        default_browser = subprocess.check_output(['xdg-settings', 'get', 'default-web-browser']).strip()
-        if default_browser == b'porcupine.desktop':
+        default_browser_http = subprocess.check_output(['xdg-settings', 'get', 'default-url-scheme-handler', 'http']).strip()
+        default_browser_https = subprocess.check_output(['xdg-settings', 'get', 'default-url-scheme-handler', 'https']).strip()
+        if default_browser_http == default_browser_https == b'porcupine.desktop':
             self.default_browser_group.hide()
         else:
             self.default_browser_group.show()
@@ -164,7 +165,8 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         self.close()
 
     def set_default_browser(self):
-        subprocess.call(['xdg-settings', 'set', 'default-web-browser', 'porcupine.desktop'])
+        subprocess.call(['xdg-settings', 'set', 'default-url-scheme-handler', 'http', 'porcupine.desktop'])
+        subprocess.call(['xdg-settings', 'set', 'default-url-scheme-handler', 'https', 'porcupine.desktop'])
         self.update_ui()
 
 
