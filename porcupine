@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
-import argparse, sys, os, json, subprocess, platform, inspect
+import argparse
+import sys
+import os
+import json
+import subprocess
+import inspect
+import signal
 from PyQt5 import Qt, QtWidgets, QtCore
 
+
 def get_icon_path():
-    p = platform.system()
-
-    if p == 'Linux' and sys.argv and sys.argv[0].startswith(sys.prefix):
-        # Porcupine is installed systemwide in Linux
+    if sys.argv and sys.argv[0].startswith(sys.prefix):
+        # Porcupine is installed systemwide
         prefix = os.path.join(sys.prefix, 'share/pixmaps')
-
-    elif getattr(sys, 'frozen', False):
-        # Check if app is "frozen"
-        # https://pythonhosted.org/PyInstaller/#run-time-information
-        if p == 'Darwin':
-            prefix = os.path.join(sys._MEIPASS, 'share')
-        elif p == 'Windows':
-            prefix = os.path.join(os.path.dirname(sys.executable), 'share')
 
     else:
         # Look for share directory relative to python file
@@ -23,24 +20,20 @@ def get_icon_path():
 
     return os.path.join(prefix, "porcupine.png")
 
+
 def validate_url(url):
     return (url.lower().startswith('http://') or url.lower().startswith('https://'))
+
 
 def delay(app, milliseconds):
     time = QtCore.QTime.currentTime().addMSecs(milliseconds)
     while (QtCore.QTime.currentTime() < time):
         app.processEvents()
 
+
 class Settings(object):
     def __init__(self):
-        p = platform.system()
-        if p == 'Windows':
-            appdata = os.environ['APPDATA']
-            self.path = '{}\\Porcupine\\porcupine.json'.format(appdata)
-        elif p == 'Darwin':
-            self.path = os.path.expanduser('~/Library/Application Support/Porcupine/porcupine.json')
-        else:
-            self.path = os.path.expanduser('~/.config/porcupine.json')
+        self.path = os.path.expanduser('~/.config/porcupine.json')
 
     def load(self):
         use_default = False
@@ -73,6 +66,7 @@ class Settings(object):
 
         json.dump(settings, open(self.path, 'w'))
 
+
 class PorcupineSettingsWindow(QtWidgets.QMainWindow):
     def __init__(self, app, settings):
         super(PorcupineSettingsWindow, self).__init__()
@@ -90,28 +84,50 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         self.radio_clipboard.toggled.connect(self.toggle)
         self.radio_command = QtWidgets.QRadioButton('Run command with the URL')
         self.radio_command.toggled.connect(self.toggle)
+        self.edit_command = QtWidgets.QLineEdit()
+        self.edit_command.setPlaceholderText('for example: qvm-open-in-dvm %U')
+        self.edit_command.setText(s['cmd'])
+
+        # Button
+        self.save_button = QtWidgets.QPushButton("Save Settings")
+        self.save_button.clicked.connect(self.save_settings)
+        buttons_layout = QtWidgets.QHBoxLayout()
+        buttons_layout.addWidget(self.save_button)
+        buttons_layout.addStretch()
+
+        # Default browser
+        default_browser_label = QtWidgets.QLabel("Porcupine isn't your default browser")
+        default_browser_label.setStyleSheet('QLabel { font-size: 13px; }')
+        default_browser_button = QtWidgets.QPushButton("Set as default")
+        default_browser_button.setStyleSheet('QPushButton { font-size: 13px; font-weight: bold; }')
+        default_browser_button.clicked.connect(self.set_default_browser)
+        default_browser_layout = QtWidgets.QHBoxLayout()
+        default_browser_layout.addWidget(default_browser_label)
+        default_browser_layout.addWidget(default_browser_button)
+        default_browser_layout.addStretch()
+        self.default_browser_group = QtWidgets.QGroupBox()
+        self.default_browser_group.setLayout(default_browser_layout)
+
+        # Choose the default action
         if s['action'] == 'clipboard':
             self.radio_clipboard.setChecked(True)
             self.radio_command.setChecked(False)
         else:
             self.radio_clipboard.setChecked(False)
             self.radio_command.setChecked(True)
-        self.edit_command = QtWidgets.QLineEdit()
-        self.edit_command.setPlaceholderText('for example: qvm-open-in-dvm %U')
-        self.edit_command.setText(s['cmd'])
-        button_save = QtWidgets.QPushButton("Save Settings")
-        button_save.clicked.connect(self.save_settings)
-
         self.update_ui()
 
         # Set the layout
         layout = QtWidgets.QVBoxLayout()
+        layout.setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
         layout.addWidget(label)
         layout.addWidget(self.radio_clipboard)
         layout.addWidget(self.radio_command)
         layout.addWidget(self.edit_command)
         layout.addStretch()
-        layout.addWidget(button_save)
+        layout.addLayout(buttons_layout)
+        layout.addStretch()
+        layout.addWidget(self.default_browser_group)
         central_widget = QtWidgets.QWidget()
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
@@ -121,12 +137,22 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         self.update_ui()
 
     def update_ui(self):
+        # Is porcupine the default browser?
+        default_browser_http = subprocess.check_output(['xdg-settings', 'get', 'default-url-scheme-handler', 'http']).strip()
+        default_browser_https = subprocess.check_output(['xdg-settings', 'get', 'default-url-scheme-handler', 'https']).strip()
+        if default_browser_http == default_browser_https == b'porcupine.desktop':
+            self.default_browser_group.hide()
+        else:
+            self.default_browser_group.show()
+
         # Only update the UI if it has been built
         if hasattr(self, 'radio_clipboard') and hasattr(self, 'radio_command') and hasattr(self, 'edit_command'):
             if self.radio_clipboard.isChecked():
                 self.edit_command.hide()
             if self.radio_command.isChecked():
                 self.edit_command.show()
+
+        self.adjustSize()
 
     def save_settings(self):
         if self.radio_clipboard.isChecked():
@@ -137,6 +163,12 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
 
         self.settings.save(action, cmd)
         self.close()
+
+    def set_default_browser(self):
+        subprocess.call(['xdg-settings', 'set', 'default-url-scheme-handler', 'http', 'porcupine.desktop'])
+        subprocess.call(['xdg-settings', 'set', 'default-url-scheme-handler', 'https', 'porcupine.desktop'])
+        self.update_ui()
+
 
 def main():
     # Parse arguments
@@ -151,7 +183,8 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
 
     if args.url is None:
-        # No arguments, open the settings dialog
+        # No arguments, open the settings dialog. Even though settings_window is
+        # never used later, we must keep a reference to it
         settings_window = PorcupineSettingsWindow(app, settings)
 
     else:
@@ -175,7 +208,7 @@ def main():
             else:
                 # Launch subprocess
                 cmd = s['cmd'].split()
-                cmd = [url if x=='%U' else x for x in cmd]
+                cmd = [url if x == '%U' else x for x in cmd]
                 try:
                     subprocess.call(cmd)
                 except:
@@ -191,7 +224,11 @@ def main():
         timer.timeout.connect(quit)
         timer.start(4000)
 
+    # Allow ctrl-c to work
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
     sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
     main()
