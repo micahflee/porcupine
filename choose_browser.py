@@ -56,8 +56,8 @@ for key, value in sorted(browser_info.items()):
 
 for key in browser_list:
     key = key + ".desktop"
-    print(key)
-    print(browser_info.get(key)[0]) #note, this is just 1st, not necessarily exec
-    print(browser_info.get(key)[1]) #note, this is just 1st, not necessarily icon
+    print("Browser:\t" + key[:-8])
+    print("Exec path:\t" + browser_info.get(key)[0][5:]) #note, this is just 1st, not necessarily exec
+    print("Icon path:\t" + browser_info.get(key)[1][5:]) #note, this is just 1st, not necessarily icon
     print("\n")
 
