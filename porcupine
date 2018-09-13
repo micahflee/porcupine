@@ -80,10 +80,12 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
 
         # Build the GUI
         label = QtWidgets.QLabel('What should Porcupine do with the URL?')
-        self.radio_clipboard = QtWidgets.QRadioButton('Copy it to the clipboard')
+        self.radio_clipboard = QtWidgets.QRadioButton('Copy to my clipboard')
         self.radio_clipboard.toggled.connect(self.toggle)
         self.radio_command = QtWidgets.QRadioButton('Run command with the URL')
         self.radio_command.toggled.connect(self.toggle)
+        self.radio_choose = QtWidgets.QRadioButton('Select browser each time')
+        self.radio_choose.toggled.connect(self.toggle)
         self.edit_command = QtWidgets.QLineEdit()
         self.edit_command.setPlaceholderText('for example: qvm-open-in-dvm %U')
         self.edit_command.setText(s['cmd'])
@@ -112,9 +114,15 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         if s['action'] == 'clipboard':
             self.radio_clipboard.setChecked(True)
             self.radio_command.setChecked(False)
-        else:
+            self.radio_choose.setChecked(False)
+        elif s['action'] == 'command':
             self.radio_clipboard.setChecked(False)
             self.radio_command.setChecked(True)
+            self.radio_choose.setChecked(False)
+        else: #adding GUI option as radio_choose
+            self.radio_clipboard.setChecked(False)
+            self.radio_command.setChecked(False)
+            self.radio_choose.setChecked(True)
         self.update_ui()
 
         # Set the layout
@@ -122,6 +130,7 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         layout.setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
         layout.addWidget(label)
         layout.addWidget(self.radio_clipboard)
+        layout.addWidget(self.radio_choose)  # adding GUI to QT layout
         layout.addWidget(self.radio_command)
         layout.addWidget(self.edit_command)
         layout.addStretch()
@@ -147,18 +156,20 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
 
         # Only update the UI if it has been built
         if hasattr(self, 'radio_clipboard') and hasattr(self, 'radio_command') and hasattr(self, 'edit_command'):
-            if self.radio_clipboard.isChecked():
-                self.edit_command.hide()
             if self.radio_command.isChecked():
                 self.edit_command.show()
+            else:
+                self.edit_command.hide()
 
         self.adjustSize()
 
     def save_settings(self):
         if self.radio_clipboard.isChecked():
             action = 'clipboard'
-        else:
+        elif self.radio_command.isChecked():
             action = 'command'
+        else:
+            action = 'choose'
         cmd = self.edit_command.text()
 
         self.settings.save(action, cmd)
@@ -168,7 +179,6 @@ class PorcupineSettingsWindow(QtWidgets.QMainWindow):
         subprocess.call(['xdg-settings', 'set', 'default-url-scheme-handler', 'http', 'porcupine.desktop'])
         subprocess.call(['xdg-settings', 'set', 'default-url-scheme-handler', 'https', 'porcupine.desktop'])
         self.update_ui()
-
 
 def main():
     # Parse arguments
@@ -205,7 +215,7 @@ def main():
                 clipboard = app.clipboard()
                 clipboard.setText(url)
                 systray.showMessage("Copied address to clipboard", url)
-            else:
+            elif s['action'] == 'command':
                 # Launch subprocess
                 cmd = s['cmd'].split()
                 cmd = [url if x == '%U' else x for x in cmd]
@@ -213,6 +223,10 @@ def main():
                     subprocess.call(cmd)
                 except:
                     systray.showMessage("Porcupine", "Error running command: {}".format(s['cmd']))
+            else:  # Try to get a response here.
+                clipboard = app.clipboard()
+                clipboard.setText("blahblahblah")
+                systray.showMessage("I did a thing", url)
         else:
             systray.showMessage("Porcupine", "{} does not appear to be a URL".format(url))
 
