@@ -6,7 +6,56 @@ import json
 import subprocess
 import inspect
 import signal
+from os.path import isfile, join, isdir
 from PyQt5 import Qt, QtWidgets, QtCore
+
+def get_browser_list():
+        # Path to applications in Linux
+    all_applications_path = ['/usr/share/applications/', '/usr/local/share/applications/', '~/.local/share/applications/']
+    applications_path = '/usr/share/applications/' # TODO: add /usr/local/share/applications, and ~/.local/share/applications later
+
+
+    # Loop over paths
+    #for path in all_applications_path:
+
+    # create file exists exception
+        # Collect all applications in path
+    all_applications_list = [f for f in listdir(applications_path) if isfile(join(applications_path, f))]
+
+    #   else:
+    #       continue
+
+    available_browsers_name = []
+
+    # Create list of http/https applications
+    for file in all_applications_list:
+        if ".desktop" in file:
+            filepath = applications_path + file
+            searchfile = open(filepath, "r")
+            for line in searchfile:
+                if "x-scheme-handler/http" in line:
+                    available_browsers_name.append(file)
+            searchfile.close()
+
+    # Dictionary to store:
+    #   keys = .desktop
+    #   values = paths in list[icon,executable]
+    all_browsers_new = []
+
+    # Search through browser list and store in browser_info dictionary
+    for browser in available_browsers_name:
+        browser_dict_new = {} # to store each individual browser's info
+        available_browsers = applications_path + browser
+        searchbrowser = open(available_browsers, "r")
+        browser_dict_new["name"] = browser
+        for line in searchbrowser:
+            if "Icon=" in line:            
+                browser_dict_new["icon_path"] = line[5:].strip()
+            if "Exec=" in line:
+                browser_dict_new["exec_path"] = line[5:].strip()
+        all_browsers_new.append(browser_dict_new)
+        searchbrowser.close()
+    return all_browsers_new
 
 
 def get_icon_path():
