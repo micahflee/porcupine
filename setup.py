@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 import sys
-from setuptools import setup
+from setuptools import setup, find_packages
 
 version_file = os.path.join(os.path.dirname(__file__), 'share', 'version')
 version = open(version_file).read().strip().lstrip('v')
@@ -24,7 +24,12 @@ setup(
     description=description, long_description=long_description,
     author=author, author_email=author_email,
     url=url, license=license,
-    scripts=['porcupine'],
+    packages=find_packages(),
+    entry_points={
+        'console_scripts': [
+            'porcupine=porcupine.__main__:main'
+        ]
+    },
     data_files=[
         (os.path.join(sys.prefix, 'share/applications'), ['share/porcupine.desktop']),
         (os.path.join(sys.prefix, 'share/pixmaps'), ['share/porcupine.png'])

@@ -13,12 +13,11 @@ For Debian-like distros: `apt install -y build-essential fakeroot python3-all py
 
 For Fedora-like distros: `dnf install -y rpm-build python3-qt5`
 
-You can run porcupine without installing it (note that without installing it, you
-cannot set it as your default browser):
+You can run porcupine without installing it (note that without installing it, you cannot set it as your default browser):
 
 ```sh
-./porcupine
-./porcupine http://www.example.com
+python3 -m porcupine
+python3 -m porcupine http://www.example.com
 ```
 
 You can also build porcupine packages to install:
